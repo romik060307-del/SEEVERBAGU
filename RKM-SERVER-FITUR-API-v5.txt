@@ -1,0 +1,143 @@
+RKM SERVER v1.3.0 — PANDUAN API SERVER
+====================================
+
+Semua contoh memakai URL dasar http://HOST:8080. Ganti HOST dengan IP tablet atau domain tunnel. TOKEN didapat dari hasil /api/login atau /api/register. Request POST mengirim JSON Content-Type: application/json.
+
+KONDISI PENTING
+---------------
+Ini API server. Klien web/aplikasi tetap perlu memanggil API dan menggambar antarmukanya. File HTML lama tidak ikut diubah. Endpoint live di bawah menyimpan metadata, bukan mengirim aliran video/audio; Google Drive membutuhkan OAuth dari klien.
+
+CEK SERVER
+----------
+GET /health
+GET /api/features
+
+KONTAK, QR, PRESENCE, PRIVASI
+-----------------------------
+GET  /api/contacts?token=TOKEN
+POST /api/contacts                 {"token":"TOKEN","action":"add","phone":"628...","name":"Teman"}
+GET  /api/contact-card?token=TOKEN&phone=628...
+POST /api/contacts/qr              {"token":"TOKEN","phone":"628..."}
+GET  /api/blocked?token=TOKEN
+POST /api/block                    {"token":"TOKEN","phone":"628...","action":"block"}
+POST /api/block                    {"token":"TOKEN","phone":"628...","action":"unblock"}
+GET/POST /api/privacy              {"token":"TOKEN","key":"lastSeen","value":"contacts"}
+GET/POST /api/settings             {"token":"TOKEN","key":"fontScale","value":1.15}
+POST /api/presence                 {"token":"TOKEN","online":true}
+GET  /api/presence?token=TOKEN
+
+Nilai privasi status: contacts, everyone, except, only. Contoh:
+POST /api/status/privacy           {"token":"TOKEN","visibility":"except","excluded":["628123456789"]}
+POST /api/status/privacy           {"token":"TOKEN","visibility":"only","allowed":["628123456789"]}
+
+KONTAK DIARSIPKAN / FAVORIT / SEMATAN
+------------------------------------
+POST /api/archived-contacts        {"token":"TOKEN","contact":"628...","value":true}
+POST /api/favorite-contacts        {"token":"TOKEN","contact":"628...","value":true}
+POST /api/pinned-contacts          {"token":"TOKEN","contact":"628...","value":true}
+POST /api/chat-settings            {"token":"TOKEN","contact":"628...","muted":true,"archived":true,"pinned":true,"favorite":true}
+GET  /api/archived-contacts?token=TOKEN
+GET  /api/favorite-contacts?token=TOKEN
+GET  /api/pinned-contacts?token=TOKEN
+GET  /api/chat-settings?token=TOKEN
+
+PESAN, REAKSI, BINTANG, ARSIP, SEMATAN, TERUSKAN
+------------------------------------------------
+POST /api/messages                 {"token":"TOKEN","recipient":"628...","text":"Halo"}
+POST /api/messages                 {"token":"TOKEN","groupId":"GROUP_ID","text":"Halo grup"}
+GET  /api/messages?token=TOKEN&peer=628...
+GET  /api/messages?token=TOKEN&groupId=GROUP_ID
+POST /api/messages/action          {"token":"TOKEN","id":"MESSAGE_ID","action":"edit","text":"Teks baru"}
+POST /api/messages/action          {"token":"TOKEN","id":"MESSAGE_ID","action":"delete"}
+POST /api/messages/reaction        {"token":"TOKEN","id":"MESSAGE_ID","emoji":"❤️"}
+POST /api/messages/star            {"token":"TOKEN","id":"MESSAGE_ID","action":"star"}
+POST /api/messages/archive         {"token":"TOKEN","id":"MESSAGE_ID","action":"archive"}
+POST /api/messages/action          {"token":"TOKEN","id":"MESSAGE_ID","action":"pin"}
+POST /api/messages/forward         {"token":"TOKEN","id":"MESSAGE_ID","recipient":"628..."}
+POST /api/messages/once/view       {"token":"TOKEN","id":"MESSAGE_ID","action":"onceView"}
+GET  /api/message-reactions?token=TOKEN&peer=628...
+GET  /api/message-stars?token=TOKEN
+GET  /api/message-archives?token=TOKEN
+GET  /api/message-pins?token=TOKEN
+GET  /api/message-receipts?token=TOKEN
+GET  /api/once-views?token=TOKEN
+
+Setiap klien harus membuat permintaan yang sesuai dari tindakan UI. Sisi server tidak bisa mendeteksi gestur geser atau tekan-lama dengan sendirinya.
+
+GRUP
+----
+POST /api/groups                   {"token":"TOKEN","name":"Teman","info":"Grup","members":["628...","628..."]}
+GET  /api/groups?token=TOKEN
+POST /api/groups/action            {"token":"TOKEN","groupId":"GROUP_ID","action":"rename","name":"Nama baru"}
+POST /api/groups/action            {"token":"TOKEN","groupId":"GROUP_ID","action":"edit","info":"Info baru"}
+POST /api/groups/action            {"token":"TOKEN","groupId":"GROUP_ID","action":"addMember","phone":"628..."}
+POST /api/groups/action            {"token":"TOKEN","groupId":"GROUP_ID","action":"removeMember","phone":"628..."}
+POST /api/groups/action            {"token":"TOKEN","groupId":"GROUP_ID","action":"promoteAdmin","phone":"628..."}
+POST /api/groups/action            {"token":"TOKEN","groupId":"GROUP_ID","action":"demoteAdmin","phone":"628..."}
+POST /api/groups/action            {"token":"TOKEN","groupId":"GROUP_ID","action":"transferOwner","phone":"628..."}
+POST /api/groups/action            {"token":"TOKEN","groupId":"GROUP_ID","action":"leave"}
+POST /api/groups/action            {"token":"TOKEN","groupId":"GROUP_ID","action":"delete"}
+POST /api/groups/action            {"token":"TOKEN","groupId":"GROUP_ID","action":"pin","value":true}
+POST /api/groups/action            {"token":"TOKEN","groupId":"GROUP_ID","action":"favorite","value":true}
+POST /api/groups/action            {"token":"TOKEN","groupId":"GROUP_ID","action":"mute","value":true}
+POST /api/groups/photo             {"token":"TOKEN","groupId":"GROUP_ID","data":"BASE64_IMAGE"}
+
+MEDIA, LOKASI, DOKUMEN, STIKER
+------------------------------
+POST /api/media                    {"token":"TOKEN","recipient":"628...","kind":"file","mimeType":"application/pdf","fileName":"dokumen.pdf","data":"BASE64"}
+POST /api/media                    {"token":"TOKEN","groupId":"GROUP_ID","kind":"video","mimeType":"video/mp4","data":"BASE64"}
+POST /api/media                    {"token":"TOKEN","recipient":"628...","kind":"location","latitude":-7.87,"longitude":111.46,"locationName":"Ponorogo"}
+POST /api/media                    {"token":"TOKEN","recipient":"628...","kind":"contact","contactCard":{"phone":"628...","name":"Nama"}}
+GET  /api/media?token=TOKEN&id=MEDIA_ID
+POST /api/stickers/favorites       {"token":"TOKEN","stickerId":"sticker-1","sticker":{"url":"...","pack":"Favorit"}}
+GET  /api/stickers/favorites?token=TOKEN
+
+Foto/video/audio dapat dikirim sebagai data Base64 dengan ukuran batas per file yang disebutkan di README. Pemilihan file, pembuatan stiker, perekaman audio/video, dan pemutaran harus ditangani klien.
+
+STATUS
+------
+POST /api/status                   {"token":"TOKEN","text":"Status saya","visibility":"contacts"}
+POST /api/status                   {"token":"TOKEN","text":"Video","mediaType":"video","mimeType":"video/mp4","data":"BASE64"}
+GET  /api/status?token=TOKEN
+GET  /api/status/history?token=TOKEN
+POST /api/status/delete            {"token":"TOKEN","statusId":"STATUS_ID"}
+POST /api/status/view              {"token":"TOKEN","statusId":"STATUS_ID"}
+POST /api/status/comment           {"token":"TOKEN","statusId":"STATUS_ID","text":"Keren!"}
+POST /api/status/react             {"token":"TOKEN","statusId":"STATUS_ID","emoji":"🔥"}
+POST /api/status/repost            {"token":"TOKEN","statusId":"STATUS_ID"}
+POST /api/status/archive           {"token":"TOKEN","statusId":"STATUS_ID"}
+POST /api/status/highlight         {"token":"TOKEN","statusId":"STATUS_ID","name":"Liburan","thumbnailId":"MEDIA_ID"}
+GET  /api/status/comments?token=TOKEN&statusId=STATUS_ID
+GET  /api/status/views?token=TOKEN&statusId=STATUS_ID
+GET  /api/status/reactions?token=TOKEN&statusId=STATUS_ID
+GET  /api/status/reposts?token=TOKEN&statusId=STATUS_ID
+GET  /api/status/archive?token=TOKEN
+GET  /api/status/highlights?token=TOKEN
+
+EKSPOR / CADANGAN
+-----------------
+GET /api/messages/export?token=TOKEN&peer=628...&includeMedia=true
+GET /api/chats/export?token=TOKEN&groupId=GROUP_ID&includeMedia=true
+GET /api/backup/export?token=TOKEN&includeMedia=true
+POST /api/backup                   {"token":"TOKEN","action":"restore","backup":{...}}
+POST /api/backup                   {"token":"TOKEN","action":"export","provider":"local","schedule":"manual"}
+
+Ekspor mengembalikan JSON. Simpan berkas hasil respons di perangkat lain. Google Drive tidak otomatis terhubung hanya karena provider berisi "google-drive"; integrasi OAuth harus dilakukan oleh klien.
+
+PANGGILAN, LIVE, PROFIL
+-----------------------
+GET  /api/calls/history?token=TOKEN
+POST /api/calls/history            {"token":"TOKEN","peer":"628...","type":"video","result":"missed"}
+POST /api/live                     {"token":"TOKEN","action":"start","title":"Live saya","visibility":"contacts"}
+GET  /api/live?token=TOKEN
+POST /api/live/action              {"token":"TOKEN","id":"LIVE_ID","action":"comment","text":"Halo"}
+POST /api/live/action              {"token":"TOKEN","id":"LIVE_ID","action":"join"}
+POST /api/live/action              {"token":"TOKEN","id":"LIVE_ID","action":"request"}
+POST /api/live/action              {"token":"TOKEN","id":"LIVE_ID","action":"accept","phone":"628..."}
+POST /api/live/action              {"token":"TOKEN","id":"LIVE_ID","action":"pause"}
+POST /api/live/action              {"token":"TOKEN","id":"LIVE_ID","action":"resume"}
+POST /api/live/action              {"token":"TOKEN","id":"LIVE_ID","action":"end"}
+POST /api/profile/visit            {"token":"TOKEN","profileOwner":"628..."}
+GET  /api/profile/visitors?token=TOKEN
+
+Aksi live ini mencatat sesi, peserta, komentar, jeda dan permintaan ikut. Untuk siaran video/audio live sungguhan, klien perlu implementasi WebRTC/media terpisah.
