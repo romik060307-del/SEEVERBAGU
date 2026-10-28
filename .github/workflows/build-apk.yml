@@ -1,0 +1,74 @@
+name: Build RKM Server APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ "main", "master" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build RKM Server for Android
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Prepare source folder
+        shell: bash
+        run: |
+          if [ -f "RKM-Server-Source.zip" ]; then
+            ARCHIVE="RKM-Server-Source.zip"
+          elif [ -f "RK-Server-Source.zip" ]; then
+            ARCHIVE="RK-Server-Source.zip"
+          else
+            ARCHIVE=""
+          fi
+
+          if [ -n "$ARCHIVE" ]; then
+            mkdir -p .rk-build-src
+            unzip -q -o "$ARCHIVE" -d .rk-build-src
+            if [ -f ".rk-build-src/rk-server-android/app/build.gradle" ]; then
+              echo "SOURCE_DIR=.rk-build-src/rk-server-android" >> "$GITHUB_ENV"
+            elif [ -f ".rk-build-src/app/build.gradle" ]; then
+              echo "SOURCE_DIR=.rk-build-src" >> "$GITHUB_ENV"
+            else
+              echo "Tidak menemukan app/build.gradle di ZIP sumber" >&2
+              exit 1
+            fi
+          elif [ -f "app/build.gradle" ]; then
+            echo "SOURCE_DIR=." >> "$GITHUB_ENV"
+          else
+            echo "Unggah RKM-Server-Source.zip atau letakkan proyek Android pada root repository" >&2
+            exit 1
+          fi
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+
+      - name: Set up Gradle 8.9
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build debug APK
+        working-directory: ${{ env.SOURCE_DIR }}
+        run: gradle assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: RKM-Server-APK
+          path: ${{ env.SOURCE_DIR }}/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
